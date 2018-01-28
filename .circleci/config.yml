@@ -1,0 +1,51 @@
+# Clojure CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-clojure/ for more details
+#
+defaults: &defaults
+  working_directory: ~/repo
+  docker:
+    - image: thheller/cljs-dev:latest
+  environment:
+    # Customize the JVM maximum heap limit
+    JVM_OPTS: -Xmx3200m
+
+version: 2
+jobs:
+  build:
+    <<: *defaults
+    steps:
+
+      - restore_cache:
+          keys:
+          - m2-deps-{{ checksum "project.clj" }}
+          - m2-deps-
+
+      - restore_cache:
+          keys:
+          - npm-deps-{{ checksum "package.json" }}
+          - npm-deps-
+
+      - run: npm install 
+
+      - save_cache:
+          paths:
+            - ~/repo/node_modules
+          key: npm-deps-{{ checksum "package.json" }}
+
+      - run: npx shadow-cljs --cli-info
+
+      - run: npx shadow-cljs start
+
+      - run: ./wait-for-server.sh
+
+      - run: npx shadow-cljs clj-eval '(+ 1 1)'
+
+      - run: npx shadow-cljs stop
+
+      - run: npx shadow-cljs start; npx shadow-cljs clj-eval '(+ 1 2)'
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: m2-deps-{{ checksum "project.clj" }}
