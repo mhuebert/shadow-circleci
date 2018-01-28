@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/mhuebert/shadow-circleci#readme",
   "dependencies": {
-    "shadow-cljs": "^2.0.144"
+    "shadow-cljs": "^2.0.145"
   }
 }
