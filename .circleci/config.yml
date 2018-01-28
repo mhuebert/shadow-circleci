@@ -1,51 +1,51 @@
-# Clojure CircleCI 2.0 configuration file
+# Javascript Node CircleCI 2.0 configuration file
 #
-# Check https://circleci.com/docs/2.0/language-clojure/ for more details
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
 #
-defaults: &defaults
-  working_directory: ~/repo
-  docker:
-    - image: thheller/cljs-dev:latest
-  environment:
-    # Customize the JVM maximum heap limit
-    JVM_OPTS: -Xmx3200m
-
 version: 2
 jobs:
   build:
-    <<: *defaults
+    docker:
+      # specify the version you desire here
+      - image: mhuebert/docker-java-node
+
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # - image: circleci/mongo:3.4.4
+
+    working_directory: ~/project
+
     steps:
+      - checkout
 
+      # Download and cache dependencies
       - restore_cache:
           keys:
-          - m2-deps-{{ checksum "project.clj" }}
-          - m2-deps-
+          - v3-dependencies-{{ checksum "package.json" }}--{{ checksum "shadow-cljs.edn"}}
 
-      - restore_cache:
-          keys:
-          - npm-deps-{{ checksum "package.json" }}
-          - npm-deps-
+      - run:
+          command: npm install;
 
-      - run: npm install 
+      - run:
+          command: npx shadow-cljs start;
+      - run:
+          command: npx shadow-cljs clj-eval :foo-1;
+      - run:
+          command: npx shadow-cljs stop;
+      - run:
+          command: npx shadow-cljs start && npx shadow-cljs clj-eval :foo-2;
+
+      - run:
+          command: cat target/shadow-cljs/shadow-cljs.log.0 2> /dev/null
+          working_directory: ~/project/editor
+          when: on_fail
 
       - save_cache:
           paths:
-            - ~/repo/node_modules
-          key: npm-deps-{{ checksum "package.json" }}
-
-      - run: npx shadow-cljs --cli-info
-
-      - run: npx shadow-cljs start
-
-      - run: ./wait-for-server.sh
-
-      - run: npx shadow-cljs clj-eval '(+ 1 1)'
-
-      - run: npx shadow-cljs stop
-
-      - run: npx shadow-cljs start; npx shadow-cljs clj-eval '(+ 1 2)'
-
-      - save_cache:
-          paths:
+            - ~/project/node_modules
+            - ~/project/target
             - ~/.m2
-          key: m2-deps-{{ checksum "project.clj" }}
+          key: v3-dependencies-{{ checksum "package.json" }}--{{ checksum "shadow-cljs.edn"}}
+
+
